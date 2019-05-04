@@ -21,7 +21,7 @@ ADD nbd-rest.zip /var/share/nimplatform/
 WORKDIR /var/share/nimplatform/
 
 # Uncompress the previous utility zip file and removing it after decompression.
-RUN unzip ./nbd-rest.zip  && rm ./nbd-rest.zip
+RUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip
 
 #The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime.
 EXPOSE 8080
