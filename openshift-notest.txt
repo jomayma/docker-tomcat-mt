@@ -1,0 +1,389 @@
+lunes, 20 de mayo de 2019, 21:03:32 CEST
+
+$ oc new-build --name=mt-migration -D $'FROM tomcat:7-alpine\nLABEL maintainer="jmayomartin@gmail.com"\nENV JAVA_OPTS="-DMWA_ENV=DEV"\nCOPY nbd-rest.war /usr/local/tomcat/webapps/\nWORKDIR /usr/local/tomcat/webapps/nbd-rest/\nRUN unzip -q ./nbd-rest.war &&  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war\nCOPY nbd-rest.zip /var/share/nimplatform/\nWORKDIR /var/share/nimplatform/\nRUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip\nRUN chgrp -R 0 /var/share && chmod -R g=u /var/share && chgrp -R 0 /usr/local/tomcat && chmod -R g=u /usr/local/tomcat\nUSER 10001\nEXPOSE 8080\nCMD ["catalina.sh", "run"]'
+--> Found Docker image 81cd953 (9 days old) from Docker Hub for "tomcat:7-alpine"
+
+    * An image stream tag will be created as "tomcat:7-alpine" that will track the source image
+    * A Docker build using a predefined Dockerfile will be created
+      * The resulting image will be pushed to image stream tag "mt-migration:latest"
+      * Every time "tomcat:7-alpine" changes a new build will be triggered
+
+--> Creating resources with label build=mt-migration ...
+    imagestream.image.openshift.io "tomcat" created
+    imagestream.image.openshift.io "mt-migration" created
+    error: buildconfigs.build.openshift.io "mt-migration" is forbidden: build strategy Docker is not allowed
+--> Failed
+
+$
+
+
+------------------------------------------
+
+lunes, 13 de mayo de 2019, 22:03:52 CEST
+
+$ docker login registry.redhat.io
+Username: jomayma
+Password: 
+Login Succeeded
+$ docker pull registry.redhat.io/jboss-webserver-5/webserver50-tomcat9-openshift
+
+------------------
+sábado, 11 de mayo de 2019, 11:09:24 CEST
+
+#after last Docker modifications
+jmayo (master *) docker-tomcat-mt $ docker tag mt-app:latest registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.1
+jmayo (master *) docker-tomcat-mt $ docker push registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.1
+The push refers to repository [registry.starter-us-east-1a.openshift.com/jomayma/mt-app]
+5d24f1d54d41: Pushed 
+f97a0bfad391: Pushed 
+3ea6b2ec7a16: Layer already exists 
+a985c455d002: Layer already exists 
+988b46ab6002: Layer already exists 
+0136a6a85859: Layer already exists 
+98a0db77a14c: Layer already exists 
+9072514c7af0: Layer already exists 
+f6146a44a7d3: Layer already exists 
+0c3170905795: Layer already exists 
+df64d3292fd6: Layer already exists 
+1.1: digest: sha256:f0af3c68809eca55c7dc7eb98fa04654fa460bfc021a3f6586367f9193c49423 size: 2628
+jmayo (master *) docker-tomcat-mt $ 
+
+------------------
+
+#OpenShift Online provides an integrated container registry that adds the ability to provision new image repositories on the fly.
+authenticating:
+$ docker login registry.starter-us-east-1a.openshift.com -u $(oc whoami) -p $(oc whoami -t)
+
+Pushing :  docker push registry.starter-us-east-1a.openshift.com/<project>/<image>:<tag>
+jmayo (master) docker-tomcat-mt $ docker tag mt-app:latest registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0
+jmayo (master) docker-tomcat-mt $ docker push registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0
+The push refers to repository [registry.starter-us-east-1a.openshift.com/jomayma/mt-app]
+3ea6b2ec7a16: Pushed 
+a985c455d002: Pushed 
+988b46ab6002: Pushed 
+0136a6a85859: Pushed 
+98a0db77a14c: Pushed 
+9072514c7af0: Pushed 
+f6146a44a7d3: Pushed 
+0c3170905795: Pushed 
+df64d3292fd6: Pushed 
+1.0: digest: sha256:15d09601966d3667a1d1323407c08ab3db6a56239328adfb5599119a69490569 size: 2206
+jmayo (master) docker-tomcat-mt $
+
+jmayo (master) docker-tomcat-mt $ oc new-app registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0
+W0511 11:29:39.364202    1796 newapp.go:479] Could not find an image stream match for "registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0". Make sure that a Docker image with that tag is available on the node for the deployment to succeed.
+--> Found Docker image 46aa97e (6 days old) from registry.starter-us-east-1a.openshift.com for "registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0"
+
+    * This image will be deployed in deployment config "mt-app"
+    * Port 8080/tcp will be load balanced by service "mt-app"
+      * Other containers can access this service through the hostname "mt-app"
+    * WARNING: Image "registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0" runs as the 'root' user which may not be permitted by your cluster administrator
+
+--> Creating resources ...
+    deploymentconfig.apps.openshift.io "mt-app" created
+    service "mt-app" created
+--> Success
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/mt-app' 
+    Run 'oc status' to view your app.
+jmayo (master) docker-tomcat-mt $ oc logs  mt-app-1-fxskn
+Error from server (BadRequest): container "mt-app" in pod "mt-app-1-fxskn" is waiting to start: trying and failing to pull image
+
+#TESTING Pulling command: docker pull registry.starter-us-east-1a.openshift.com/<project>/<image>:<tag>
+jmayo (master) docker-tomcat-mt $ docker pull registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0
+1.0: Pulling from jomayma/mt-app
+Digest: sha256:15d09601966d3667a1d1323407c08ab3db6a56239328adfb5599119a69490569
+Status: Image is up to date for registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0
+jmayo (master) docker-tomcat-mt $ docker images ls
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+jmayo (master) docker-tomcat-mt $ 
+
+#create a container from remote openshift repo and run
+jmayo (master) docker-tomcat-mt $ docker run -p 80:8080 registry.starter-us-east-1a.openshift.com/jomayma/mt-app:1.0
+11-May-2019 10:06:31.243 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version:        Apache Tomcat/8.0.53
+11-May-2019 10:06:31.248 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          Jun 29 2018 14:42:45 UTC
+11-May-2019 10:06:31.249 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server number:         8.0.53.0
+11-May-2019 10:06:31.249 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Linux
+11-May-2019 10:06:31.250 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            4.9.125-linuxkit
+11-May-2019 10:06:31.250 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+11-May-2019 10:06:31.251 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             /usr/lib/jvm/java-1.7-openjdk/jre
+11-May-2019 10:06:31.252 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           1.7.0_181-b01
+[...]
+11-May-2019 10:06:46.837 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in 15387 ms
+^C11-May-2019 10:07:07.851 INFO [Thread-14] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-apr-8080"]
+11-May-2019 10:07:07.904 INFO [Thread-14] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["ajp-apr-8009"]
+11-May-2019 10:07:07.905 INFO [Thread-14] org.apache.catalina.core.StandardService.stopInternal Stopping service Catalina
+JSON PROVIDER DESTROYED!
+11-May-2019 10:07:08.145 INFO [Thread-14] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-apr-8080"]
+11-May-2019 10:07:08.203 INFO [Thread-14] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["ajp-apr-8009"]
+11-May-2019 10:07:08.265 INFO [Thread-14] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-apr-8080"]
+11-May-2019 10:07:08.266 INFO [Thread-14] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["ajp-apr-8009"]
+jmayo (master) docker-tomcat-mt $
+
+
+--------------------
+You may push a new image to this repository using the CLI:
+$ docker tag mt-app:latest jomayma/private-repo-mt-app:1.0
+$ docker push jomayma/private-repo-mt-app:1.0
+
+$ oc import-image my-mt-app --from=docker.io/jomayma/private-repo-mt-app:1.0 --confirm
+imagestream.image.openshift.io/my-mt-app imported
+
+Name:                   my-mt-app
+Namespace:              jomayma
+Created:                Less than a second ago
+Labels:                 <none>
+Annotations:            openshift.io/image.dockerRepositoryCheck=2019-05-11T08:43:36Z
+Docker Pull Spec:       docker-registry.default.svc:5000/jomayma/my-mt-app
+Image Lookup:           local=false
+Unique Images:          1
+Tags:                   1
+
+latest
+  tagged from docker.io/jomayma/private-repo-mt-app:1.0
+
+  * docker.io/jomayma/private-repo-mt-app@sha256:15d09601966d3667a1d1323407c08ab3db6a56239328adfb5599119a69490569
+      Less than a second ago
+[...]
+E055DDEE13C370389288584E7 61B832AC2F1C5A90F0F9B00A1C506407564C17A3 713DA88BE50911535FE716F5208B0AB1D63011C7 79F7026C690BAA50B92CD8B66A3AD3F4F22C4FED 9BA44C2621385CB966EBA586F72C284D731FABEE A27677289986DB50844682F8ACB77FC2E86E29AC A9C5DF4D22E99998D9875A5110C01C5A2F6059E7 DCFD35E0BF8CA7344752DE8B6FB21E8933C60243 F3A04C595DB5B6A5F1ECA43E3B7BBB100D811BBE F7DA48BB64BCB84ECBA7EE6935CD23C10D498E23
+                TOMCAT_MAJOR=8
+                TOMCAT_VERSION=8.0.53
+                TOMCAT_SHA512=cd8a4e48a629a2f2bb4ce6b101ebcce41da52b506064396ec1b2915c0b0d8d82123091242f2929a649bcd8b65ecf6cd1ab9c7d90ac0e261821097ab6fbe22df9
+                TOMCAT_TGZ_URLS=https://www.apache.org/dyn/closer.cgi?action=download&filename=tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz          https://www-us.apache.org/dist/tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz             https://www.apache.org/dist/tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz                https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz
+                TOMCAT_ASC_URLS=https://www.apache.org/dyn/closer.cgi?action=download&filename=tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz.asc      https://www-us.apache.org/dist/tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz.asc         https://www.apache.org/dist/tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz.asc    https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.53/bin/apache-tomcat-8.0.53.tar.gz.asc
+                JAVA_OPTS=-DMWA_ENV=DEV
+
+$ 
+--------
+jmayo (master) docker-tomcat-mt $ oc import-image my-mt-app --from=docker.io/jomayma/private-repo:mt-app --confirm
+error: tag mt-app failed: you may not have access to the Docker image "docker.io/jomayma/private-repo:mt-app"
+imagestream.image.openshift.io/my-mt-app imported with errors
+
+Name:                   my-mt-app
+Namespace:              jomayma
+Created:                Less than a second ago
+Labels:                 <none>
+Annotations:            openshift.io/image.dockerRepositoryCheck=2019-05-05T15:28:38Z
+Docker Pull Spec:       docker-registry.default.svc:5000/jomayma/my-mt-app
+Image Lookup:           local=false
+Unique Images:          0
+Tags:                   1
+
+latest
+  tagged from docker.io/jomayma/private-repo:mt-app
+
+  ! error: Import failed (Unauthorized): you may not have access to the Docker image "docker.io/jomayma/private-repo:mt-app"
+      Less than a second ago
+--------------------------
+TEST COMMAND:
+# If you don't already have a .dockercfg file, you can create a dockercfg secret directly by using:
+  oc create secret docker-registry my-secret --docker-server=DOCKER_REGISTRY_SERVER --docker-username=DOCKER_USER
+--docker-password=DOCKER_PASSWORD --docker-email=DOCKER_EMAIL
+
+$ oc create secret docker-registry my-private-docker-secret --docker-server=docker.io/jomayma/private-repo --docker-username=jomayma --docker-password=I******9 --docker-email=jmayomartin@gmail.com
+--> KO
+
+$ oc create secret docker-registry 2nd-private-docker-secret --docker-server=https://index.docker.io/v1 \
+ --docker-username=jomayma --docker-password=I******9 --docker-email=jmayomartin@gmail.com \
+--dry-run=false
+--> ??
+--------------------------> idea FROM https://bugzilla.redhat.com/show_bug.cgi?id=1533930 
+jmayo (master) docker-tomcat-mt $ oc get secrets
+NAME                                 TYPE                                  DATA      AGE
+2nd-private-docker-secret            kubernetes.io/dockerconfigjson        1         11m
+builder-dockercfg-kcvvz              kubernetes.io/dockercfg               1         213d
+builder-token-b6hwb                  kubernetes.io/service-account-token   4         213d
+builder-token-zhcmd                  kubernetes.io/service-account-token   4         213d
+default-dockercfg-dfgmp              kubernetes.io/dockercfg               1         213d
+default-token-mj5l9                  kubernetes.io/service-account-token   4         213d
+default-token-z25x2                  kubernetes.io/service-account-token   4         213d
+deployer-dockercfg-2bkf4             kubernetes.io/dockercfg               1         213d
+deployer-token-42r7b                 kubernetes.io/service-account-token   4         213d
+deployer-token-vctbl                 kubernetes.io/service-account-token   4         213d
+my-private-docker-secret             kubernetes.io/dockerconfigjson        1         3d
+my-private-docker-secret-mt-app      kubernetes.io/dockerconfigjson        1         3d
+secret-docker-jomayma-private-repo   kubernetes.io/dockerconfigjson        1         3d
+
+# retrieve a deployer token, remember to un-base64 it!
+jmayo (master) docker-tomcat-mt $ oc get secret deployer-token-42r7b -o template --template '{{.data.token}}' | base64 -D; echo
+eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJqb21heW1hIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlcGxveWVyLXRva2VuLTQycjdiIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImRlcGxveWVyIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiZmI0OTJlYjMtYzlhZi0xMWU4LTk0YTEtMTIxOTEyMzE3YjRjIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmpvbWF5bWE6ZGVwbG95ZXIifQ.HUwHs-zG8BuMZFoQVr4Qbfixnuk9P0X73jSNEZx30IhbBHCZg3VacHPJ7TERE05bcVU8Y2ki4yWAdgY6tQJFVKIVGzNGSvQ4eETMmvhZKiffM-cvZjq8Q0_SX1_-xesTnerMAtN2svvnFD-myHBU6eFqQGLorqEAEEV1Acd8gmn6chaPYAEB4OUYQqcwBroJguWpaOX3NaageJFn_WG9LMdNIbhRUyVi_Gw7zWc335eatiUmwlASyrHQml8Dncet81C64J-varR2h5_cn7FY8hxVEldtpvjEZDGAb84IJTaNrGEbyw1EKLCRV_zfOySlWgMjtSxwJKJGxwAEVe_VWQ
+
+jmayo (master) docker-tomcat-mt $ ls ~/.docker/config.json
+/Users/jmayo/.docker/config.json
+
+
+---> IDEA FROM https://github.com/openshift/origin/issues/18449
+#ATTENTION: Therefore you need to put an empty value for the credsStore key in the ~/.docker/config.json and redo a docker login docker.io.
+
+jmayo (master) docker-tomcat-mt $ vi ~/.docker/config.json  <<---- put an empty value for the credsStore
+jmayo (master) docker-tomcat-mt $ docker login docker.io
+jmayo (master) docker-tomcat-mt $ oc create secret generic --from-file=.dockerconfigjson=/Users/jmayo/.docker/config.json --type=kubernetes.io/dockerconfigjson pullsecret
+secret/pullsecret created
+jmayo (master) docker-tomcat-mt $ oc import-image docker.io/jomayma/private-repo:mt-app --confirm
+imagestream.image.openshift.io/private-repo imported
+
+Name:                   private-repo
+Namespace:              jomayma
+Created:                Less than a second ago
+Labels:                 <none>
+Annotations:            openshift.io/image.dockerRepositoryCheck=2019-05-08T22:48:55Z
+Docker Pull Spec:       docker-registry.default.svc:5000/jomayma/private-repo
+Image Lookup:           local=false
+Unique Images:          1
+Tags:                   1
+
+mt-app
+  tagged from docker.io/jomayma/private-repo:mt-app
+
+  * docker.io/jomayma/private-repo@sha256:15d09601966d3667a1d1323407c08ab3db6a56239328adfb5599119a69490569
+      Less than a second ago
+
+Image Name:     private-repo:mt-app
+Docker Image:   docker.io/jomayma/private-repo@sha256:15d09601966d36.....
+
+..............
+
+
+jmayo (master) docker-tomcat-mt $ oc get secrets
+NAME                                 TYPE                                  DATA      AGE
+2nd-private-docker-secret            kubernetes.io/dockerconfigjson        1         52m
+builder-dockercfg-kcvvz              kubernetes.io/dockercfg               1         214d
+builder-token-b6hwb                  kubernetes.io/service-account-token   4         214d
+builder-token-zhcmd                  kubernetes.io/service-account-token   4         214d
+default-dockercfg-dfgmp              kubernetes.io/dockercfg               1         214d
+default-token-mj5l9                  kubernetes.io/service-account-token   4         214d
+default-token-z25x2                  kubernetes.io/service-account-token   4         214d
+deployer-dockercfg-2bkf4             kubernetes.io/dockercfg               1         214d
+deployer-token-42r7b                 kubernetes.io/service-account-token   4         214d
+deployer-token-vctbl                 kubernetes.io/service-account-token   4         214d
+my-private-docker-secret             kubernetes.io/dockerconfigjson        1         3d
+my-private-docker-secret-mt-app      kubernetes.io/dockerconfigjson        1         3d
+pullsecret                           kubernetes.io/dockerconfigjson        1         2m     <<<<<------------
+secret-docker-jomayma-private-repo   kubernetes.io/dockerconfigjson        1         3d
+
+
+
+--------------------------
+jmayo (master) docker-tomcat-mt $ oc create secret docker-registry --help
+Create a new secret for use with Docker registries. 
+
+Dockercfg secrets are used to authenticate against Docker registries. 
+
+When using the Docker command line to push images, you can authenticate to a given registry by running: '$ docker login
+DOCKER REGISTRY SERVER --username=DOCKER USER --password=DOCKER PASSWORD --email=DOCKER _EMAIL'. 
+
+That produces a ~/.dockercfg file that is used by subsequent 'docker push' and 'docker pull' commands to authenticate to
+the registry. The email address is optional. 
+
+When creating applications, you may have a Docker registry that requires authentication.  In order for the nodes to pull
+images on your behalf, they have to have the credentials.  You can provide this information by creating a dockercfg
+secret and attaching it to your service account.
+
+Usage:
+  oc create secret docker-registry NAME --docker-username=user --docker-password=password --docker-email=email
+[--docker-server=string] [--from-literal=key1=value1] [--dry-run] [flags]
+
+Examples:
+  # If you don't already have a .dockercfg file, you can create a dockercfg secret directly by using:
+  oc create secret docker-registry my-secret --docker-server=DOCKER_REGISTRY_SERVER --docker-username=DOCKER_USER
+--docker-password=DOCKER_PASSWORD --docker-email=DOCKER_EMAIL
+
+Options:
+      --allow-missing-template-keys=true: If true, ignore any errors in templates when a field or map key is missing in
+the template. Only applies to golang and jsonpath output formats.
+      --append-hash=false: Append a hash of the secret to its name.
+      --docker-email='': Email for Docker registry
+      --docker-password='': Password for Docker registry authentication
+      --docker-server='https://index.docker.io/v1/': Server location for Docker registry
+      --docker-username='': Username for Docker registry authentication
+      --dry-run=false: If true, only print the object that would be sent, without sending it.
+      --from-file=[]: Key files can be specified using their file path, in which case a default name will be given to
+them, or optionally with a name and file path, in which case the given name will be used.  Specifying a directory will
+iterate each named file in the directory that is a valid secret key.
+      --generator='secret-for-docker-registry/v1': The name of the API generator to use.
+  -o, --output='': Output format. One of:
+json|yaml|name|templatefile|template|go-template|go-template-file|jsonpath|jsonpath-file.
+      --save-config=false: If true, the configuration of current object will be saved in its annotation. Otherwise, the
+annotation will be unchanged. This flag is useful when you want to perform kubectl apply on this object in the future.
+      --template='': Template string or path to template file to use when -o=go-template, -o=go-template-file. The
+template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+      --validate=false: If true, use a schema to validate the input before sending it
+
+Use "oc options" for a list of global command-line options (applies to all commands).
+jmayo (master) docker-tomcat-mt $ 
+
+
+---- DEPLOY FROM COMMAND LINE oc
+#CHECK THE PATH TO YOUR IMAGE
+$ oc new-app --search jomayma/private-repo:mt-app
+Image streams (oc new-app --image-stream=<image-stream> [--code=<source>])
+-----
+private-repo
+  Project: jomayma
+  Tags:    mt-app
+
+Docker images (oc new-app --docker-image=<docker-image> [--code=<source>])
+-----
+jomayma/private-repo
+  Registry: Docker Hub
+  Tags:     mt-app
+
+#DEPLOYNG TO YOUR OPENSHIFT
+$ oc new-app jomayma/private-repo:mt-app
+--> Found Docker image 46aa97e (5 days old) from Docker Hub for "jomayma/private-repo:mt-app"
+
+    * An image stream tag will be created as "private-repo:mt-app" that will track this image
+    * This image will be deployed in deployment config "private-repo"
+    * Port 8080/tcp will be load balanced by service "private-repo"
+      * Other containers can access this service through the hostname "private-repo"
+    * WARNING: Image "jomayma/private-repo:mt-app" runs as the 'root' user which may not be permitted by your cluster administrator
+
+--> Creating resources ...
+    imagestream.image.openshift.io "private-repo" created
+    deploymentconfig.apps.openshift.io "private-repo" created
+    service "private-repo" created
+--> Success
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/private-repo' 
+    Run 'oc status' to view your app.
+
+jmayo (master) docker-tomcat-mt $ oc status
+In project jomayma on server https://api.starter-us-east-1a.openshift.com:443
+
+http://nodejs-ex-jomayma.9a6d.starter-us-east-1a.openshiftapps.com to pod port 8080-tcp (svc/nodejs-ex)
+  dc/nodejs-ex deploys istag/nodejs-ex:latest <-
+    bc/nodejs-ex source builds https://github.com/sclorg/nodejs-ex on openshift/nodejs:10 
+    deployment #2 deployed about an hour ago - 1 pod
+    deployment #1 deployed 3 weeks ago
+
+svc/private-repo - 172.30.134.237:8080
+  dc/private-repo deploys istag/private-repo:mt-app 
+    deployment #1 running for 2 minutes - 0/1 pods
+
+
+5 infos identified, use 'oc status --suggest' to see details.
+
+jmayo (master) docker-tomcat-mt $ oc status --suggest
+In project jomayma on server https://api.starter-us-east-1a.openshift.com:443
+
+http://nodejs-ex-jomayma.9a6d.starter-us-east-1a.openshiftapps.com to pod port 8080-tcp (svc/nodejs-ex)
+  dc/nodejs-ex deploys istag/nodejs-ex:latest <-
+    bc/nodejs-ex source builds https://github.com/sclorg/nodejs-ex on openshift/nodejs:10 
+    deployment #2 deployed about an hour ago - 1 pod
+    deployment #1 deployed 3 weeks ago
+
+svc/private-repo - 172.30.134.237:8080
+  dc/private-repo deploys istag/private-repo:mt-app 
+    deployment #1 failed 8 minutes ago: The deployment was cancelled by the user
+
+Info:
+  * dc/nodejs-ex has no readiness probe to verify pods are ready to accept traffic or ensure deployment is successful.
+    try: oc set probe dc/nodejs-ex --readiness ...
+  * dc/nodejs-ex has no liveness probe to verify pods are still running.
+    try: oc set probe dc/nodejs-ex --liveness ...
+  * dc/private-repo has no readiness probe to verify pods are ready to accept traffic or ensure deployment is successful.
+    try: oc set probe dc/private-repo --readiness ...
+  * dc/private-repo has no liveness probe to verify pods are still running.
+    try: oc set probe dc/private-repo --liveness ...
+
+View details with 'oc describe <resource>/<name>' or list everything with 'oc get all'.
