@@ -12,16 +12,40 @@ ENV JAVA_OPTS="-DMWA_ENV=DEV"
 # According to the Tomcat documentation, the War should be placed under CATALINA_BASE/webapps.
 # From the Tomcat image documentation, we know that the default path CATALINA_BASE corresponds to /usr/local/tomcat on the container.
 # The War file will be automatically expanded and deployed. 
-ADD nbd-rest.war /usr/local/tomcat/webapps/
+# it not works on openshift
+#ADD nbd-rest.war /usr/local/tomcat/webapps/
+
+#COPY nbd-rest.war /usr/local/tomcat/webapps/nbd-rest/
+#WORKDIR /usr/local/tomcat/webapps/nbd-rest/
+#RUN unzip -q ./nbd-rest.war && \
+#  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war
 
 # Adding extra files(in this sample a utility zip file used by the webapp) into the container.
-ADD nbd-rest.zip /var/share/nimplatform/
+#COPY nbd-rest.zip /var/share/nimplatform/
 
 # Set the working directory to /var/share/nimplatform/
-WORKDIR /var/share/nimplatform/
+#WORKDIR /var/share/nimplatform/
 
 # Uncompress the previous utility zip file and removing it after decompression.
-RUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip
+#RUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip
+
+COPY nbd-rest.war nbd-rest.zip /tmp/
+
+##Adding to your Dockerfile directory and file permissions to allow users in the root group to access them in the built image
+# /var/share for App and /usr/local/tomcat for Tomcat deployment
+WORKDIR /usr/local/tomcat/webapps/nbd-rest/
+WORKDIR /var/share/nimplatform/
+RUN unzip -q /tmp/nbd-rest.war -d /usr/local/tomcat/webapps/nbd-rest/ && \
+    unzip -q /tmp/nbd-rest.zip -d /var/share/nimplatform/ && \
+    rm /tmp/nbd-rest.zip && \
+    rm /tmp/nbd-rest.war && \
+    chgrp -R 0 /var/share && \
+    chmod -R g=u /var/share && \
+    chgrp -R 0 /usr/local/tomcat && \
+    chmod -R g=u /usr/local/tomcat
+
+### Containers should NOT run as root as a good practice
+USER 10001
 
 #The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime.
 EXPOSE 8080
