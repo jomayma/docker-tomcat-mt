@@ -1,6 +1,6 @@
 Data corrente: 21/05/2019
 
---- TESTT 02 BEGIN
+--- TESTT 02 --OK-- BEGIN
 $ oc new-build . --name=mt-migration
 warning: Cannot check if git requires authentication.
 --> Found image 81cd953 (10 days old) in image stream "sdd-poc/tomcat" under tag "7-alpine" for "tomcat:7-alpine"
