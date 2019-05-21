@@ -1,6 +1,300 @@
+Data corrente: 21/05/2019
+
+--- TESTT 02 BEGIN
+$ oc new-build . --name=mt-migration
+warning: Cannot check if git requires authentication.
+--> Found image 81cd953 (10 days old) in image stream "sdd-poc/tomcat" under tag "7-alpine" for "tomcat:7-alpine"
+
+    * A Docker build using source code from https://github.com/jomayma/docker-tomcat-mt.git#openshift will be created
+      * The resulting image will be pushed to image stream "mt-migration:latest"
+      * Use 'start-build' to trigger a new build
+      * WARNING: this source repository may require credentials.
+                 Create a secret with your git credentials and use 'set build-secret' to assign it to the build config.
+
+--> Creating resources with label build=mt-migration ...
+    imagestream "mt-migration" created
+    buildconfig "mt-migration" created
+--> Success
+    Build configuration "mt-migration" created and build triggered.
+    Run 'oc logs -f bc/mt-migration' to stream the build progress.
+
+$ oc start-build mt-migration --from-dir=. --follow=true --wait=true
+Uploading directory "." as binary input for the build ...
+build "mt-migration-2" started
+Receiving source from STDIN as archive ...
+Replaced Dockerfile FROM image tomcat:7-alpine
+Step 1/13 : FROM tomcat@sha256:a0241e109208196c50b02262f39bf5365364abebc7aadc7e79e3e93773e57b46
+ ---> 81cd9536b1e6
+Step 2/13 : ENV "HTTP_PROXY" "http://newproxy.hbl.local:8080" "HTTPS_PROXY" "http://newproxy.hbl.local:8080" "NO_PROXY" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local" "http_proxy" "http://newproxy.hbl.local:8080" "https_proxy" "http://newproxy.hbl.local:8080" "no_proxy" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local"
+ ---> Using cache
+ ---> 4aea7111a65b
+Step 3/13 : LABEL maintainer "jmayomartin@gmail.com"
+ ---> Using cache
+ ---> 103e44e82728
+Step 4/13 : ENV JAVA_OPTS "-DMWA_ENV=DEV"
+ ---> Using cache
+ ---> 69109fd7d55c
+Step 5/13 : COPY nbd-rest.war nbd-rest.zip /tmp/
+ ---> Using cache
+ ---> b75dad00a7e2
+Step 6/13 : WORKDIR /usr/local/tomcat/webapps/nbd-rest/
+ ---> Using cache
+ ---> e84d7d4de80f
+Step 7/13 : WORKDIR /var/share/nimplatform/
+ ---> Using cache
+ ---> d14ddc116cce
+Step 8/13 : RUN unzip -q /tmp/nbd-rest.war -d /usr/local/tomcat/webapps/nbd-rest/ &&     unzip -q /tmp/nbd-rest.zip -d /var/share/nimplatform/ &&     rm /tmp/nbd-rest.zip &&    rm /tmp/nbd-rest.war &&     chgrp -R 0 /var/share &&     chmod -R g=u /var/share &&     chgrp -R 0 /usr/local/tomcat &&     chmod -R g=u /usr/local/tomcat
+ ---> Using cache
+ ---> 4c186103b89e
+Step 9/13 : USER 10001
+ ---> Using cache
+ ---> 4c7e10841324
+Step 10/13 : EXPOSE 8080
+ ---> Using cache
+ ---> 390344df1e10
+Step 11/13 : CMD catalina.sh run
+ ---> Using cache
+ ---> 83807cf6b34d
+Step 12/13 : ENV "OPENSHIFT_BUILD_NAME" "mt-migration-2" "OPENSHIFT_BUILD_NAMESPACE" "sdd-poc"
+ ---> Using cache
+ ---> c82f1fd32cc4
+Step 13/13 : LABEL "io.openshift.build.name" "mt-migration-2" "io.openshift.build.namespace" "sdd-poc"
+ ---> Using cache
+ ---> ba4701d51317
+Successfully built ba4701d51317
+
+Pushing image docker-registry.default.svc:5000/sdd-poc/mt-migration:latest ...
+Pushed 6/10 layers, 60% complete
+Pushed 7/10 layers, 70% complete
+Pushed 8/10 layers, 80% complete
+Pushed 9/10 layers, 90% complete
+Pushed 10/10 layers, 100% complete
+Push successful
+
+$ oc describe imagestream/mt-migration
+Name:                   mt-migration
+Namespace:              sdd-poc
+Created:                4 minutes ago
+Labels:                 build=mt-migration
+Annotations:            openshift.io/generated-by=OpenShiftNewBuild
+Docker Pull Spec:       docker-registry.default.svc:5000/sdd-poc/mt-migration
+Image Lookup:           local=false
+Unique Images:          1
+Tags:                   1
+
+latest
+  no spec tag
+
+  * docker-registry.default.svc:5000/sdd-poc/mt-migration@sha256:0aa210c86f555294af3c76f36ee7decf5dce9148d4cc5ce3ed34b0f352845afd
+      3 minutes ago
+
+$ oc new-app mt-migration
+--> Found image ba4701d (About an hour old) in image stream "sdd-poc/mt-migration" under tag "latest" for "mt-migration"
+
+    * This image will be deployed in deployment config "mt-migration"
+    * Port 8080/tcp will be load balanced by service "mt-migration"
+      * Other containers can access this service through the hostname "mt-migration"
+
+--> Creating resources ...
+    deploymentconfig "mt-migration" created
+    service "mt-migration" created
+--> Success
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/mt-migration'
+    Run 'oc status' to view your app.
+
+$ oc get all --selector app=mt-migration
+NAME                             REVISION   DESIRED   CURRENT   TRIGGERED BY
+deploymentconfigs/mt-migration   1          1         1         config,image(mt-migration:latest)
+
+NAME                      READY     STATUS    RESTARTS   AGE
+po/mt-migration-1-5vzdf   1/1       Running   0          3m
+
+NAME                DESIRED   CURRENT   READY     AGE
+rc/mt-migration-1   1         1         1         3m
+
+NAME               TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
+svc/mt-migration   ClusterIP   172.30.54.3   <none>        8080/TCP   3m
+
+$ oc create route edge --service=mt-migration
+route "mt-migration" created
+
+$ oc describe route/mt-migration
+Name:                   mt-migration
+Namespace:              sdd-poc
+Created:                25 seconds ago
+Labels:                 app=mt-migration
+Annotations:            openshift.io/host.generated=true
+Requested Host:         mt-migration-sdd-poc.apps.ocp101t.hbl.local
+                          exposed on router router 25 seconds ago
+Path:                   <none>
+TLS Termination:        edge
+Insecure Policy:        <none>
+Endpoint Port:          8080-tcp
+
+Service:        mt-migration
+Weight:         100 (100%)
+Endpoints:      10.131.1.97:8080
+
+
+$ $ curl -k "https://mt-migration-sdd-poc.apps.ocp101t.hbl.local/nbd-rest/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   447  100   447    0     0    440      0  0:00:01  0:00:01 --:--:--   440
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Next Integration Middleware - It Works!</title>
+</head>
+<body>
+        <h1>It works!</h1>
+        <p>
+                If you read this, the <strong>middleware</strong> package should have
+                been deployed correctly.
+        </p>
+        <p>
+                <em> (Platform: it.ubi.share.nimd.middleware~nbd-rest/18.6.2_i_jmm Build: Fri May 03 08:10:37 GMT 2019)
+                </em>
+        </p>
+</body>
+</html>
+
+$ curl -k -X POST "https://mt-migration-sdd-poc.apps.ocp101t.hbl.local/nbd-rest/rest/nim/checkup/Checkup/echo" -H  "accept: application/json" -H  "content-type: application/json" -d '{  "context": [    {      "name": "string",      "type": "string",      "value": "string"    }  ],  "message": "ciao pippo"}'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   211  100    87  100   124    253    361 --:--:-- --:--:-- --:--:--   615{"context":[{"name":"string","type":"string","value":"string"}],"message":"ciao pippo"}
+
+
+--- TESTT 02 END ---
+$ oc new-build . --name=mt-migration
+warning: Cannot check if git requires authentication.
+--> Found Docker image 624fb61 (8 months old) from Docker Hub for "tomcat:8.0-alpine"
+
+    * An image stream will be created as "tomcat:8.0-alpine" that will track the source image
+    * A Docker build using source code from https://github.com/jomayma/docker-tomcat-mt.git#openshift will be created
+      * The resulting image will be pushed to image stream "mt-migration:latest"
+      * Every time "tomcat:8.0-alpine" changes a new build will be triggered
+      * WARNING: this source repository may require credentials.
+                 Create a secret with your git credentials and use 'set build-secret' to assign it to the build config.
+
+--> Creating resources with label build=mt-migration ...
+    imagestream "mt-migration" created
+    buildconfig "mt-migration" created
+--> Success
+    Build configuration "mt-migration" created and build triggered.
+    Run 'oc logs -f bc/mt-migration' to stream the build progress.
+
+$ oc start-build mt-migration --from-file=Dockerfile --follow=true --wait=true
+Uploading file "Dockerfile" as binary input for the build ...
+build "mt-migration-2" started
+Receiving source from STDIN as file Dockerfile
+Replaced Dockerfile FROM image tomcat:7-alpine
+Step 1/13 : FROM tomcat@sha256:a0241e109208196c50b02262f39bf5365364abebc7aadc7e79e3e93773e57b46
+ ---> 81cd9536b1e6
+Step 2/13 : ENV "HTTP_PROXY" "http://newproxy.hbl.local:8080" "HTTPS_PROXY" "http://newproxy.hbl.local:8080" "NO_PROXY" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local" "http_proxy" "http://newproxy.hbl.local:8080" "https_proxy" "http://newproxy.hbl.local:8080" "no_proxy" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local"
+ ---> Using cache
+ ---> 1e8ee05cf0c8
+Step 3/13 : LABEL maintainer "jmayomartin@gmail.com"
+ ---> Using cache
+ ---> ce8eb3104ed3
+Step 4/13 : ENV JAVA_OPTS "-DMWA_ENV=DEV"
+ ---> Using cache
+ ---> beadbd8585bc
+Step 5/13 : COPY nbd-rest.war nbd-rest.zip /tmp/
+error: build error: lstat nbd-rest.war: no such file or directory
+error: the build sdd-poc/mt-migration-2 status is "Failed"
+
+------------------------
+$ oc start-build mt-migration --from-dir=. --follow=true --wait=true
+Uploading directory "." as binary input for the build ...
+build "mt-migration-2" started
+Receiving source from STDIN as archive ...
+Replaced Dockerfile FROM image tomcat:7-alpine
+
+Pulling image tomcat@sha256:a0241e109208196c50b02262f39bf5365364abebc7aadc7e79e3e93773e57b46 ...
+Pulled 3/6 layers, 54% complete
+Pulled 4/6 layers, 68% complete
+Pulled 5/6 layers, 85% complete
+Pulled 6/6 layers, 100% complete
+Extracting
+Step 1/17 : FROM tomcat@sha256:a0241e109208196c50b02262f39bf5365364abebc7aadc7e79e3e93773e57b46
+ ---> 81cd9536b1e6
+Step 2/17 : ENV "HTTP_PROXY" "http://newproxy.hbl.local:8080" "HTTPS_PROXY" "http://newproxy.hbl.local:8080" "NO_PROXY" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local" "http_proxy" "http://newproxy.hbl.local:8080" "https_proxy" "http://newproxy.hbl.local:8080" "no_proxy" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local"
+ ---> Running in ddc7ac711f51
+ ---> 1e8ee05cf0c8
+Removing intermediate container ddc7ac711f51
+Step 3/17 : LABEL maintainer "jmayomartin@gmail.com"
+ ---> Running in d1dcfda8ea81
+ ---> ce8eb3104ed3
+Removing intermediate container d1dcfda8ea81
+Step 4/17 : ENV JAVA_OPTS "-DMWA_ENV=DEV"
+ ---> Running in 0be74bb11531
+ ---> beadbd8585bc
+Removing intermediate container 0be74bb11531
+Step 5/17 : COPY nbd-rest.war /usr/local/tomcat/webapps/
+ ---> 45c544bab54f
+Removing intermediate container d0843dcc2bb5
+Step 6/17 : WORKDIR /usr/local/tomcat/webapps/nbd-rest/
+ ---> 9a5c30e18dfe
+Removing intermediate container 2e717c41799d
+Step 7/17 : RUN unzip -q ./nbd-rest.war &&  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war
+ ---> Running in 3f5c3658a58a
+
+unzip: can't open ./nbd-rest.war[.zip]
+Removing intermediate container 3f5c3658a58a
+error: build error: The command '/bin/sh -c unzip -q ./nbd-rest.war &&  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war' returned a non-zero code: 1
+error: the build sdd-poc/mt-migration-2 status is "Failed"
+
+$ oc new-build --name=mt-migration -D $'FROM tomcat:7-alpine\nLABEL maintainer="jmayomartin@gmail.com"\nENV JAVA_OPTS="-DMWA_ENV=DEV"\nCOPY nbd-rest.war /usr/local/tomcat/webapps/\nWORKDIR /usr/local/tomcat/webapps/nbd-rest/\nRUN unzip -q ./nbd-rest.war &&  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war\nCOPY nbd-rest.zip /var/share/nimplatform/\nWORKDIR /var/share/nimplatform/\nRUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip\nUSER root\nRUN chgrp -R 0 /var/share && chmod -R g=u /var/share && chgrp -R 0 /usr/local/tomcat && chmod -R g=u /usr/local/tomcat\nUSER 10001\nEXPOSE 8080\nCMD ["catalina.sh", "run"]'
+--> Found Docker image 81cd953 (10 days old) from Docker Hub for "tomcat:7-alpine"
+
+    * An image stream will be created as "tomcat:7-alpine" that will track the source image
+    * A Docker build using a predefined Dockerfile will be created
+      * The resulting image will be pushed to image stream "mt-migration:latest"
+      * Every time "tomcat:7-alpine" changes a new build will be triggered
+
+--> Creating resources with label build=mt-migration ...
+    imagestream "mt-migration" created
+    buildconfig "mt-migration" created
+--> Success
+    Build configuration "mt-migration" created and build triggered.
+    Run 'oc logs -f bc/mt-migration' to stream the build progress.
+
+
+
+BEGIN--------------------------------
+---------CLEAN ALL THE NEW BUILD PROFILE mt-migration(AND RELATED OBJECTS)
+$ oc get all --selector build=mt-migration
+NAME                        TYPE      FROM            LATEST
+buildconfigs/mt-migration   Docker    Git@openshift   2
+
+NAME                    TYPE      FROM             STATUS                       STARTED             DURATION
+builds/mt-migration-1   Docker    Git@1c48c34      Failed (DockerBuildFailed)   About an hour ago   7s
+builds/mt-migration-2   Docker    Binary@1c48c34   Complete                     About an hour ago   15s
+
+NAME                        DOCKER REPO                                             TAGS      UPDATED
+imagestreams/mt-migration   docker-registry.default.svc:5000/sdd-poc/mt-migration   latest    About an hour ago
+
+#DELETE BUILD RESOURCES
+
+$ oc delete all --selector build=mt-migration
+buildconfig "mt-migration" deleted
+imagestream "mt-migration" deleted
+
+#DELETE POD RESOURCES
+
+$ oc delete all --selector app=mt-migration
+deploymentconfig "mt-migration" deleted
+route "mt-migration" deleted
+pod "mt-migration-1-rlzcd" deleted
+service "mt-migration" deleted
+
+--------------------------------------END
+
 lunes, 20 de mayo de 2019, 21:03:32 CEST
 
-$ oc new-build --name=mt-migration -D $'FROM tomcat:7-alpine\nLABEL maintainer="jmayomartin@gmail.com"\nENV JAVA_OPTS="-DMWA_ENV=DEV"\nCOPY nbd-rest.war /usr/local/tomcat/webapps/\nWORKDIR /usr/local/tomcat/webapps/nbd-rest/\nRUN unzip -q ./nbd-rest.war &&  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war\nCOPY nbd-rest.zip /var/share/nimplatform/\nWORKDIR /var/share/nimplatform/\nRUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip\nRUN chgrp -R 0 /var/share && chmod -R g=u /var/share && chgrp -R 0 /usr/local/tomcat && chmod -R g=u /usr/local/tomcat\nUSER 10001\nEXPOSE 8080\nCMD ["catalina.sh", "run"]'
+$ oc new-build --name=mt-migration -D $'FROM tomcat:7-alpine\nLABEL maintainer="jmayomartin@gmail.com"\nENV JAVA_OPTS="-DMWA_ENV=DEV"\nCOPY nbd-rest.war /usr/local/tomcat/webapps/\nWORKDIR /usr/local/tomcat/webapps/nbd-rest/\nRUN unzip -q ./nbd-rest.war &&  rm /usr/local/tomcat/webapps/nbd-rest/nbd-rest.war\nCOPY nbd-rest.zip /var/share/nimplatform/\nWORKDIR /var/share/nimplatform/\nRUN unzip -q ./nbd-rest.zip  && rm ./nbd-rest.zip\nUSER root\nRUN chgrp -R 0 /var/share && chmod -R g=u /var/share && chgrp -R 0 /usr/local/tomcat && chmod -R g=u /usr/local/tomcat\nUSER 10001\nEXPOSE 8080\nCMD ["catalina.sh", "run"]'
 --> Found Docker image 81cd953 (9 days old) from Docker Hub for "tomcat:7-alpine"
 
     * An image stream tag will be created as "tomcat:7-alpine" that will track the source image
