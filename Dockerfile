@@ -1,12 +1,12 @@
 # Using Apache Tomcat Alpine as a parent image (more info here: https://hub.docker.com/_/tomcat)
 # This image is based on the popular Alpine Linux project, available in the alpine official image.
 # Alpine Linux is much smaller than most distribution base images (~5MB)
-FROM tomcat:8.0-alpine
+FROM tomcat:7.0-alpine
 
 LABEL maintainer="jmayomartin@gmail.com"
 
 # Setting a particular JVM option for your application server environment.
-ENV JAVA_OPTS="-DMWA_ENV=DEV"
+ENV JAVA_OPTS="-DMWA_ENV=${MWA_ENV:-DEV}"
 
 # Adding the sample webapp and placing it in the folder /usr/local/tomcat/webapps/ on the container.
 # According to the Tomcat documentation, the War should be placed under CATALINA_BASE/webapps.
