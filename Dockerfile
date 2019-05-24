@@ -1,7 +1,7 @@
 # Using Apache Tomcat Alpine as a parent image (more info here: https://hub.docker.com/_/tomcat)
 # This image is based on the popular Alpine Linux project, available in the alpine official image.
 # Alpine Linux is much smaller than most distribution base images (~5MB)
-FROM tomcat:7.0-alpine
+FROM tomcat:7-alpine
 
 LABEL maintainer="jmayomartin@gmail.com"
 
