@@ -1,3 +1,92 @@
+--------------------------------------------------------------
+mer 22 mag 2019 11:29:33
+
+--- TESTT 04 ---- BEGIN
+$ oc new-build . --name=mt-migration-tomcat
+warning: Cannot check if git requires authentication.
+--> Found image 81cd953 (11 days old) in image stream "sdd-poc/tomcat" under tag "7-alpine" for "tomcat:7-alpine"
+
+    * A Docker build using source code from https://github.com/jomayma/docker-tomcat-mt.git#openshift will be created
+      * The resulting image will be pushed to image stream "mt-migration-tomcat:latest"
+      * Use 'start-build' to trigger a new build
+      * WARNING: this source repository may require credentials.
+                 Create a secret with your git credentials and use 'set build-secret' to assign it to the build config.
+
+--> Creating resources with label build=mt-migration-tomcat ...
+    imagestream "mt-migration-tomcat" created
+    buildconfig "mt-migration-tomcat" created
+--> Success
+    Build configuration "mt-migration-tomcat" created and build triggered.
+    Run 'oc logs -f bc/mt-migration-tomcat' to stream the build progress.
+
+$ oc logs -f bc/mt-migration-tomcat
+Cloning "https://github.com/jomayma/docker-tomcat-mt.git" ...
+        Commit: 3d5c70b22814a7cd47c834269ba16c1525391521 (minimal mod)
+        Author: Jorge Mayo Martín <jmayomartin@gmail.com>
+        Date:   Tue May 21 14:19:15 2019 +0200
+Replaced Dockerfile FROM image tomcat:7-alpine
+Step 1/13 : FROM tomcat@sha256:a0241e109208196c50b02262f39bf5365364abebc7aadc7e79e3e93773e57b46
+ ---> 81cd9536b1e6
+Step 2/13 : ENV "HTTP_PROXY" "http://newproxy.hbl.local:8080" "HTTPS_PROXY" "http://newproxy.hbl.local:8080" "NO_PROXY" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local" "http_proxy" "http://newproxy.hbl.local:8080" "https_proxy" "http://newproxy.hbl.local:8080" "no_proxy" ".cluster.local,.hbl.local,.ocp101t.hbl.local,.svc,10.192.168.22,10.192.168.23,10.192.168.24,10.198.0.22,10.198.0.23,10.198.0.24,169.254.169.254,172.17.0.1,172.30.,172.30.0.0/16,172.30.0.1,apps.ocp101t.hbl.local,cluster.ocp101t.hbl.local,ocal101t.hbl.local,ocal102t.hbl.local,ocal103t.hbl.local,ocil101t.hbl.local,ocil102t.hbl.local,ocil103t.hbl.local,ocml101t.hbl.local,ocml102t.hbl.local,ocml103t.hbl.local"
+ ---> Using cache
+ ---> 4aea7111a65b
+Step 3/13 : LABEL maintainer "jmayomartin@gmail.com"
+ ---> Using cache
+ ---> 103e44e82728
+Step 4/13 : ENV JAVA_OPTS "-DMWA_ENV=DEV"
+ ---> Using cache
+ ---> 69109fd7d55c
+Step 5/13 : COPY nbd-rest.war nbd-rest.zip /tmp/
+error: build error: lstat nbd-rest.war: no such file or directory
+
+
+
+--- TESTT 04 ---- END
+--- TESTT 03 --OK-- BEGIN
+## TAG EXPERIMENT - PARTIAL KO
+$ oc new-build . --name=mt-migration --to='mt-migration:v1.0-tomcat7'
+warning: Cannot check if git requires authentication.
+--> Found image 81cd953 (11 days old) in image stream "sdd-poc/tomcat" under tag "7-alpine" for "tomcat:7-alpine"
+
+    * A Docker build using source code from https://github.com/jomayma/docker-tomcat-mt.git#openshift will be created
+      * The resulting image will be pushed to image stream "mt-migration:v1.0-tomcat7"
+      * Use 'start-build' to trigger a new build
+      * WARNING: this source repository may require credentials.
+                 Create a secret with your git credentials and use 'set build-secret' to assign it to the build config.
+
+--> Creating resources with label build=mt-migration ...
+    imagestream "mt-migration" created
+    buildconfig "mt-migration" created
+--> Success
+    Build configuration "mt-migration" created and build triggered.
+    Run 'oc logs -f bc/mt-migration' to stream the build progress.
+
+$ oc get all --selector build=mt-migration
+NAME                        TYPE      FROM            LATEST
+buildconfigs/mt-migration   Docker    Git@openshift   1
+
+NAME                    TYPE      FROM          STATUS                       STARTED         DURATION
+builds/mt-migration-1   Docker    Git@3d5c70b   Failed (DockerBuildFailed)   5 minutes ago   6s
+
+NAME                        DOCKER REPO                                             TAGS      UPDATED
+imagestreams/mt-migration   docker-registry.default.svc:5000/sdd-poc/mt-migration
+
+$ oc describe imagestreams/mt-migration:v1.0-tomcat7
+Error from server (NotFound): imagestreams.image.openshift.io "mt-migration:v1.0-tomcat7" not found
+
+$ oc describe imagestreams/mt-migration
+Name:                   mt-migration
+Namespace:              sdd-poc
+Created:                8 minutes ago
+Labels:                 build=mt-migration
+Annotations:            openshift.io/generated-by=OpenShiftNewBuild
+Docker Pull Spec:       docker-registry.default.svc:5000/sdd-poc/mt-migration
+Image Lookup:           local=false
+Tags:                   <none>
+###############
+--- TESTT 04 --OK-- END
+
+--------------------------------------------------------------
 Data corrente: 21/05/2019
 
 --- TESTT 02 --OK-- BEGIN

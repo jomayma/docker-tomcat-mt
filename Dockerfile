@@ -6,7 +6,7 @@ FROM tomcat:7-alpine
 LABEL maintainer="jmayomartin@gmail.com"
 
 # Setting a particular JVM option for your application server environment.
-ENV JAVA_OPTS="-DMWA_ENV=DEV"
+ENV JAVA_OPTS="-DMWA_ENV=${MWA_ENV:-DEV}"
 
 # Adding the sample webapp and placing it in the folder /usr/local/tomcat/webapps/ on the container.
 # According to the Tomcat documentation, the War should be placed under CATALINA_BASE/webapps.
